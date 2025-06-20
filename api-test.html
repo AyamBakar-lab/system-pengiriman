@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Quick Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .test-card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { border-left: 4px solid #22c55e; }
+        .error { border-left: 4px solid #ef4444; }
+        .info { border-left: 4px solid #3b82f6; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #22c55e; color: white; }
+    </style>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    
+    <div class="test-card info">
+        <h3>Current Page Information</h3>
+        <p><strong>URL:</strong> <span id="currentUrl"></span></p>
+        <p><strong>Pathname:</strong> <span id="currentPath"></span></p>
+        <p><strong>Directory:</strong> <span id="currentDir"></span></p>
+    </div>
+
+    <div class="test-card">
+        <h3>API Tests</h3>
+        <button class="btn-primary" onclick="testApi()">Test API Connection</button>
+        <button class="btn-success" onclick="testSearch()">Test Search Function</button>
+        <div id="apiResults"></div>
+    </div>
+
+    <div class="test-card">
+        <h3>Quick Actions</h3>
+        <a href="index.php" style="display: inline-block; padding: 10px; background: #6366f1; color: white; text-decoration: none; border-radius: 4px;">Back to Main App</a>
+    </div>
+
+    <script>
+        // Display current page info
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('currentPath').textContent = window.location.pathname;
+        document.getElementById('currentDir').textContent = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+
+        async function testApi() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<p>Testing API connection...</p>';
+
+            try {
+                // Test different path variations
+                const paths = [
+                    './api/shipments.php',
+                    'api/shipments.php', 
+                    window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'api/shipments.php'
+                ];
+
+                let results = '<h4>API Test Results:</h4>';
+                
+                for (let i = 0; i < paths.length; i++) {
+                    const path = paths[i];
+                    try {
+                        console.log('Testing path:', path);
+                        const response = await fetch(path);
+                        const status = response.status;
+                        const statusText = response.statusText;
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            results += `
+                                <div class="test-card success">
+                                    <strong>✅ Path ${i + 1}: SUCCESS</strong><br>
+                                    URL: ${path}<br>
+                                    Status: ${status} ${statusText}<br>
+                                    Data: ${Array.isArray(data) ? data.length + ' records' : 'Response received'}
+                                </div>
+                            `;
+                            break; // Stop on first success
+                        } else {
+                            results += `
+                                <div class="test-card error">
+                                    <strong>❌ Path ${i + 1}: FAILED</strong><br>
+                                    URL: ${path}<br>
+                                    Status: ${status} ${statusText}
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        results += `
+                            <div class="test-card error">
+                                <strong>❌ Path ${i + 1}: ERROR</strong><br>
+                                URL: ${path}<br>
+                                Error: ${error.message}
+                            </div>
+                        `;
+                    }
+                }
+
+                resultsDiv.innerHTML = results;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-card error">
+                        <strong>❌ Test Failed</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testSearch() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<p>Testing search functionality...</p>';
+
+            try {
+                const searchUrl = './api/shipments.php?search=test';
+                const response = await fetch(searchUrl);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="test-card success">
+                            <strong>✅ Search Test: SUCCESS</strong><br>
+                            URL: ${searchUrl}<br>
+                            Results: ${Array.isArray(data) ? data.length + ' records found' : 'Valid response'}<br>
+                            <pre>${JSON.stringify(data, null, 2).substring(0, 300)}...</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="test-card error">
+                            <strong>❌ Search Test: FAILED</strong><br>
+                            Status: ${response.status} ${response.statusText}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="test-card error">
+                        <strong>❌ Search Test: ERROR</strong><br>
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', testApi);
+    </script>
+</body>
+</html>
